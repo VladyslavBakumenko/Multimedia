@@ -37,11 +37,6 @@ class MainActivity : AppCompatActivity() {
             if(savedInstanceState.getBoolean(IS_PLAY_BEFORE)) viewModel.currentSound.value?.start()
             viewModel.currentSound.value?.seekTo(savedInstanceState.getInt(SEEK_TIME))
         }
-
-        viewModel.currentSound.observe(this, Observer {
-            Log.d("ffdfggdf", "1")
-        })
-
     }
 
     private fun setRecyclerView() {
@@ -58,15 +53,15 @@ class MainActivity : AppCompatActivity() {
                 override fun onSoundClickListener(soundModel: SoundModel) {
                     viewModel.clickToRecyclerViewItem(soundModel)
                     setSeekBarListener()
-                    binding.seekbar.max = viewModel.currentSound.value?.duration ?: 0
                     resetSeekBar()
                 }
             }
     }
 
-   private  fun resetSeekBar() {
+   private fun resetSeekBar() {
         coroutineScope.launch {
             while (true) {
+                binding.seekbar.max = viewModel.currentSound.value?.duration ?: 0
                 binding.seekbar.progress = viewModel.currentSound.value?.currentPosition ?: 0
                 Log.d("fdff", "e")
                 delay(1000)
@@ -104,6 +99,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        //viewModel.currentSound.value?.release()
+        //viewModel.previousSound.value?.release()
         coroutineScope.cancel()
     }
 
