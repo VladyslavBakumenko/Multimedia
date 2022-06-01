@@ -1,33 +1,27 @@
 package com.example.multimedia.presentation.mediaPlayerActivity
 
-import android.media.MediaPlayer
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.multimedia.data.SoundModel
 import com.example.multimedia.databinding.ActivityMainBinding
+import com.example.multimedia.presentation.exoPlayerActivity.ExoPlayerActivity
 import com.example.multimedia.presentation.soundRecyclerView.SoundRecyclerViewAdapter
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private var coroutineScope = CoroutineScope(Dispatchers.IO)
 
-    private lateinit var viewModel : MainViewModel
-
-
+    private lateinit var viewModel: MainViewModel
     private lateinit var binding: ActivityMainBinding
     private lateinit var soundRecyclerViewAdapter: SoundRecyclerViewAdapter
-    private lateinit var currentSound: MediaPlayer
-    private lateinit var previousSound: MediaPlayer
-    private var itFirstTab = true
-    //private val isPlaying = true
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,6 +32,16 @@ class MainActivity : AppCompatActivity() {
         setRecyclerView()
         recyclerViewClickListener()
         buttonsClickListeners()
+
+        if(savedInstanceState != null) {
+            if(savedInstanceState.getBoolean(IS_PLAY_BEFORE)) viewModel.currentSound.value?.start()
+            viewModel.currentSound.value?.seekTo(savedInstanceState.getInt(SEEK_TIME))
+        }
+
+        viewModel.currentSound.observe(this, Observer {
+            Log.d("ffdfggdf", "1")
+        })
+
     }
 
     private fun setRecyclerView() {
@@ -52,39 +56,28 @@ class MainActivity : AppCompatActivity() {
         soundRecyclerViewAdapter.onSoundClickListener =
             object : SoundRecyclerViewAdapter.OnSoundClickListener {
                 override fun onSoundClickListener(soundModel: SoundModel) {
-                    currentSound = soundModel.sound
-                    binding.seekbar.max = currentSound.duration
+                    viewModel.clickToRecyclerViewItem(soundModel)
                     setSeekBarListener()
+                    binding.seekbar.max = viewModel.currentSound.value?.duration ?: 0
                     resetSeekBar()
-                    if (itFirstTab) {
-                        currentSound.start()
-                        previousSound = currentSound
-                        itFirstTab = false
-                    } else {
-                        if (previousSound.isPlaying) {
-                            previousSound.pause()
-                            previousSound.seekTo(0)
-                        }
-                        currentSound.start()
-                        previousSound = currentSound
-                    }
                 }
             }
     }
 
-    private fun resetSeekBar() {
+   private  fun resetSeekBar() {
         coroutineScope.launch {
             while (true) {
-                binding.seekbar.progress = currentSound.currentPosition
+                binding.seekbar.progress = viewModel.currentSound.value?.currentPosition ?: 0
+                Log.d("fdff", "e")
                 delay(1000)
             }
         }
     }
 
     private fun setSeekBarListener() {
-        binding.seekbar.setOnSeekBarChangeListener (object : SeekBar.OnSeekBarChangeListener {
+        binding.seekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) currentSound.seekTo(progress)
+                if (fromUser) viewModel.currentSound.value?.seekTo(progress)
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
@@ -94,17 +87,29 @@ class MainActivity : AppCompatActivity() {
 
     private fun buttonsClickListeners() {
         binding.playSong.setOnClickListener {
-            currentSound.start()
+          // viewModel.currentSound.value?.start()
+            startActivity(Intent(this, ExoPlayerActivity::class.java))
         }
 
         binding.pause.setOnClickListener {
-            currentSound.pause()
+            viewModel.currentSound.value?.pause()
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(SEEK_TIME, viewModel.currentSound.value?.currentPosition ?: 0)
+        outState.putBoolean(IS_PLAY_BEFORE, viewModel.currentSound.value?.isPlaying ?: false)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        currentSound.stop()
-        itFirstTab = true
+        coroutineScope.cancel()
+    }
+
+    companion object {
+        private const val SEEK_TIME = "seek_time"
+        private const val IS_PLAY_BEFORE = "is_play_before"
+        private const val MEDIA_ITEM = "media_item"
     }
 }

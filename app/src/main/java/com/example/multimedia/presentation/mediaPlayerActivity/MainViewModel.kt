@@ -13,11 +13,15 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(private val application: Application) : ViewModel() {
 
+    private var itFirstTab = true
 
+    private val _currentSound = MutableLiveData<MediaPlayer>()
+    val currentSound: LiveData<MediaPlayer>
+        get() = _currentSound
 
-    private val _state = MutableLiveData<MainViewModelState>()
-    val state: LiveData<MainViewModelState>
-        get() = _state
+    private val _previousSound = MutableLiveData<MediaPlayer>()
+    val previousSound: LiveData<MediaPlayer>
+        get() = _previousSound
 
     fun getSoundList(): List<SoundModel> {
         val soundList = mutableListOf<SoundModel>()
@@ -27,5 +31,22 @@ class MainViewModel @Inject constructor(private val application: Application) : 
             add(SoundModel("Sound 3", MediaPlayer.create(application, R.raw.sound3)))
         }
         return soundList
+    }
+
+
+    fun clickToRecyclerViewItem(soundModel: SoundModel) {
+        _currentSound.value = soundModel.sound
+        if (itFirstTab) {
+            _currentSound.value?.start()
+            _previousSound.value = _currentSound.value
+            itFirstTab = false
+        } else {
+            if (_previousSound.value?.isPlaying == true) {
+                _previousSound.value?.pause()
+                _previousSound.value?.seekTo(0)
+            }
+            _currentSound.value?.start()
+            _previousSound.value = _currentSound.value
+        }
     }
 }
