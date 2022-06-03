@@ -3,6 +3,7 @@ package com.example.multimedia.presentation.exoPlayerActivity
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.example.multimedia.databinding.ActivityExoPlayerBinding
+import com.google.android.exoplayer2.ui.StyledPlayerControlView
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint

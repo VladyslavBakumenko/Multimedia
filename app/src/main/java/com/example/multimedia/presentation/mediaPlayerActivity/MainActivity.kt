@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.multimedia.data.SoundModel
 import com.example.multimedia.databinding.ActivityMainBinding
 import com.example.multimedia.presentation.exoPlayerActivity.ExoPlayerActivity
+import com.example.multimedia.presentation.glideActivity.GlideActivity
 import com.example.multimedia.presentation.soundRecyclerView.SoundRecyclerViewAdapter
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
@@ -33,10 +34,16 @@ class MainActivity : AppCompatActivity() {
         recyclerViewClickListener()
         buttonsClickListeners()
 
-        if(savedInstanceState != null) {
-            if(savedInstanceState.getBoolean(IS_PLAY_BEFORE)) viewModel.currentSound.value?.start()
+        if (savedInstanceState != null) {
+            if (savedInstanceState.getBoolean(IS_PLAY_BEFORE)) viewModel.currentSound.value?.start()
             viewModel.currentSound.value?.seekTo(savedInstanceState.getInt(SEEK_TIME))
+            Log.d("fdff", savedInstanceState.getInt(SEEK_TIME).toString())
         }
+
+
+        viewModel.currentSound.observe(this, Observer {
+            Log.d("fdfggdfg", it.currentPosition.toString())
+        })
     }
 
     private fun setRecyclerView() {
@@ -58,7 +65,7 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
-   private fun resetSeekBar() {
+    private fun resetSeekBar() {
         coroutineScope.launch {
             while (true) {
                 binding.seekbar.max = viewModel.currentSound.value?.duration ?: 0
@@ -82,18 +89,25 @@ class MainActivity : AppCompatActivity() {
 
     private fun buttonsClickListeners() {
         binding.playSong.setOnClickListener {
-          // viewModel.currentSound.value?.start()
-            startActivity(Intent(this, ExoPlayerActivity::class.java))
+            viewModel.currentSound.value?.start()
         }
 
         binding.pause.setOnClickListener {
             viewModel.currentSound.value?.pause()
         }
+
+        binding.testExoPlayerActivity.setOnClickListener {
+            startActivity(Intent(this, ExoPlayerActivity::class.java))
+        }
+
+        binding.testGlideActivity.setOnClickListener {
+            startActivity(Intent(this, GlideActivity::class.java))
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt(SEEK_TIME, viewModel.currentSound.value?.currentPosition ?: 0)
+        outState.putInt(SEEK_TIME, viewModel.currentSound.value?.currentPosition ?: 228)
         outState.putBoolean(IS_PLAY_BEFORE, viewModel.currentSound.value?.isPlaying ?: false)
     }
 
@@ -107,6 +121,5 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val SEEK_TIME = "seek_time"
         private const val IS_PLAY_BEFORE = "is_play_before"
-        private const val MEDIA_ITEM = "media_item"
     }
 }

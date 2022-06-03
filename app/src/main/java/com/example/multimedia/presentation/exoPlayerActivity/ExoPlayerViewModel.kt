@@ -5,11 +5,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.multimedia.R
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.TracksInfo
-import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
+import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.util.MimeTypes
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,15 +22,16 @@ class ExoPlayerViewModel @Inject constructor(private val application: Applicatio
         .setTrackSelector(trackSelector)
         .build()
 
+
     fun setExoPlayer(): ExoPlayer {
 
         addMediaItemsToPlayer(exoPlayer)
-        setListenerToPlayer()
+        setListenersToPlayer()
         exoPlayer.prepare()
         return exoPlayer
     }
 
-    private fun setListenerToPlayer() {
+    private fun setListenersToPlayer() {
         exoPlayer.addListener(object : Player.Listener {
             override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
                 super.onPlayerStateChanged(playWhenReady, playbackState)
@@ -60,17 +57,49 @@ class ExoPlayerViewModel @Inject constructor(private val application: Applicatio
                 makeLogD(tracksInfo.trackGroupInfos.reverse().toString())
                 makeLogD("test")
             }
+
+            override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
+                Log.d("testMetadata", mediaMetadata.artist.toString())
+                Log.d("testMetadata", mediaMetadata.albumArtist.toString())
+                Log.d("testMetadata", mediaMetadata.genre.toString())
+                Log.d("testMetadata", mediaMetadata.releaseDay.toString())
+                Log.d("testMetadata", mediaMetadata.releaseMonth.toString())
+                Log.d("testMetadata", mediaMetadata.releaseYear.toString())
+            }
         })
+
+
     }
 
     private fun addMediaItemsToPlayer(exoPlayer: ExoPlayer): ExoPlayer {
+        val testMediaMetadata = MediaMetadata.Builder()
+            .setAlbumArtist("testAlbumArtist")
+            .setArtist("testArtist")
+            .setGenre("testGenre")
+            .setReleaseDay(27)
+            .setReleaseMonth(12)
+            .setRecordingYear(4)
+            .build()
+
+        val testLiveConfig = MediaItem.LiveConfiguration.Builder()
+            .setMaxPlaybackSpeed(1.2f)
+            .setMaxOffsetMs(45000)
+            .build()
+
+        val testAdsUri = Uri.parse(application.getString(R.string.first_media_url_mp3))
 
         val firstMediaItem =
             MediaItem.fromUri(Uri.parse(application.getString(R.string.first_media_url_mp3)))
         val secondMediaItem =
             MediaItem.fromUri(Uri.parse(application.getString(R.string.second_media_url_mp3)))
         val thirdMediaItem =
-            MediaItem.fromUri(Uri.parse(application.getString(R.string.media_url_mp4)))
+            MediaItem.Builder()
+                .setAdsConfiguration(MediaItem.AdsConfiguration.Builder(testAdsUri).build())
+                .setMediaMetadata(testMediaMetadata)
+                .setLiveConfiguration(testLiveConfig)
+                .setUri(Uri.parse(application.getString(R.string.media_url_mp4)))
+                .build()
+
         val fourthMediaItem = MediaItem.fromUri(Uri.parse(VIDEO_URI_RAW_FOLDER + R.raw.video_test1))
 
         val testMediaItem = MediaItem.Builder()
@@ -86,10 +115,6 @@ class ExoPlayerViewModel @Inject constructor(private val application: Applicatio
             addMediaItem(testMediaItem)
         }
         return exoPlayer
-    }
-
-    private fun createMediaSourceFactory() {
-        val mediaSourceFactory = DefaultMediaSourceFactory(application)
     }
 
 

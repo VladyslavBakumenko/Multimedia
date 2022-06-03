@@ -20,6 +20,8 @@ class MainViewModel @Inject constructor(private val application: Application) : 
         get() = _currentSound
 
     private val _previousSound = MutableLiveData<MediaPlayer>()
+    val previousSound: LiveData<MediaPlayer>
+        get() = _previousSound
 
     fun getSoundList(): List<SoundModel> {
         val soundList = mutableListOf<SoundModel>()

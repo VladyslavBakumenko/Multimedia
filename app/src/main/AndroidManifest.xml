@@ -24,6 +24,8 @@
         </activity>
 
         <activity android:name=".presentation.exoPlayerActivity.ExoPlayerActivity"/>
+        <activity android:name=".presentation.glideActivity.GlideActivity"/>
+
     </application>
 
 </manifest>
