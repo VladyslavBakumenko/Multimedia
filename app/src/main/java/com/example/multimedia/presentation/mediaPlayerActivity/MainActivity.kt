@@ -1,12 +1,15 @@
 package com.example.multimedia.presentation.mediaPlayerActivity
 
 import android.content.Intent
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.multimedia.R
 import com.example.multimedia.data.SoundModel
 import com.example.multimedia.databinding.ActivityMainBinding
 import com.example.multimedia.presentation.exoPlayerActivity.ExoPlayerActivity
