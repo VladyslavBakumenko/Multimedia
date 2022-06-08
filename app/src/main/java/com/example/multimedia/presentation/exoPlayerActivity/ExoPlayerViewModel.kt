@@ -67,8 +67,6 @@ class ExoPlayerViewModel @Inject constructor(private val application: Applicatio
                 Log.d("testMetadata", mediaMetadata.releaseYear.toString())
             }
         })
-
-
     }
 
     private fun addMediaItemsToPlayer(exoPlayer: ExoPlayer): ExoPlayer {
@@ -108,6 +106,7 @@ class ExoPlayerViewModel @Inject constructor(private val application: Applicatio
             .build()
 
         with(exoPlayer) {
+            setMediaItem(testStreamVideo())
             setMediaItem(firstMediaItem)
             addMediaItem(secondMediaItem)
             addMediaItem(thirdMediaItem)
@@ -115,6 +114,10 @@ class ExoPlayerViewModel @Inject constructor(private val application: Applicatio
             addMediaItem(testMediaItem)
         }
         return exoPlayer
+    }
+
+    private fun testStreamVideo(): MediaItem {
+        return  MediaItem.fromUri(application.resources.getString(R.string.test_stream_video))
     }
 
 

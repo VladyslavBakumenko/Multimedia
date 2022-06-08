@@ -2,14 +2,11 @@ package com.example.multimedia.presentation.mediaPlayerActivity
 
 import android.content.Intent
 import android.media.MediaPlayer
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.multimedia.R
 import com.example.multimedia.data.SoundModel
 import com.example.multimedia.databinding.ActivityMainBinding
 import com.example.multimedia.presentation.exoPlayerActivity.ExoPlayerActivity
@@ -27,6 +24,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var soundRecyclerViewAdapter: SoundRecyclerViewAdapter
 
+    private var changeSound = false
+    private var itFirstIteration = true
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,16 +37,18 @@ class MainActivity : AppCompatActivity() {
         recyclerViewClickListener()
         buttonsClickListeners()
 
-        if (savedInstanceState != null) {
-            if (savedInstanceState.getBoolean(IS_PLAY_BEFORE)) viewModel.currentSound.value?.start()
-            viewModel.currentSound.value?.seekTo(savedInstanceState.getInt(SEEK_TIME))
-            Log.d("fdff", savedInstanceState.getInt(SEEK_TIME).toString())
+        viewModel.currentSound.observe(this) {
+            if (savedInstanceState?.getBoolean(IS_PLAY_BEFORE) == true) startSoundAndSeekBar(it)
+            if (savedInstanceState == null) startSoundAndSeekBar(it)
         }
 
-
-        viewModel.currentSound.observe(this, Observer {
-            Log.d("fdfggdfg", it.currentPosition.toString())
-        })
+        if (savedInstanceState != null) {
+            with(savedInstanceState) {
+                viewModel.lastSound = this.getInt(CURRENT_SOUND)
+                viewModel.reInitCurrentSound(this.getInt(CURRENT_SOUND))
+                viewModel.currentSound.value?.seekTo(this.getInt(SEEK_TIME))
+            }
+        }
     }
 
     private fun setRecyclerView() {
@@ -56,6 +58,12 @@ class MainActivity : AppCompatActivity() {
         binding.recyclerView.adapter = soundRecyclerViewAdapter
     }
 
+    private fun startSoundAndSeekBar(mediaPlayer: MediaPlayer) {
+        mediaPlayer.start()
+        changeSound = true
+        resetSeekBar()
+    }
+
     private fun recyclerViewClickListener() {
 
         soundRecyclerViewAdapter.onSoundClickListener =
@@ -63,20 +71,29 @@ class MainActivity : AppCompatActivity() {
                 override fun onSoundClickListener(soundModel: SoundModel) {
                     viewModel.clickToRecyclerViewItem(soundModel)
                     setSeekBarListener()
-                    resetSeekBar()
                 }
             }
     }
 
     private fun resetSeekBar() {
-        coroutineScope.launch {
+        CoroutineScope(Dispatchers.IO).launch {
+
+            if (changeSound) testCancelOldCoroutine(this)
+
+            var counter = 0
             while (true) {
-                binding.seekbar.max = viewModel.currentSound.value?.duration ?: 0
-                binding.seekbar.progress = viewModel.currentSound.value?.currentPosition ?: 0
-                Log.d("fdff", "e")
+                Log.d("fdfdfdfdfd", counter++.toString())
+                binding.seekbar.max = viewModel.currentSound.value?.duration ?: 9999
+                binding.seekbar.progress = viewModel.currentSound.value?.currentPosition ?: 9999
                 delay(1000)
             }
         }
+    }
+
+    private  fun testCancelOldCoroutine (coroutineScope: CoroutineScope) {
+        changeSound = false
+        coroutineScope.cancel()
+        resetSeekBar()
     }
 
     private fun setSeekBarListener() {
@@ -110,19 +127,24 @@ class MainActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt(SEEK_TIME, viewModel.currentSound.value?.currentPosition ?: 228)
+        outState.putInt(SEEK_TIME, viewModel.currentSound.value?.currentPosition ?: 33333)
         outState.putBoolean(IS_PLAY_BEFORE, viewModel.currentSound.value?.isPlaying ?: false)
+        outState.putInt(CURRENT_SOUND, viewModel.lastSound)
+        viewModel.currentSound.value?.release()
     }
+
 
     override fun onDestroy() {
         super.onDestroy()
-        //viewModel.currentSound.value?.release()
-        //viewModel.previousSound.value?.release()
+        viewModel.currentSound.value?.release()
         coroutineScope.cancel()
     }
 
     companion object {
         private const val SEEK_TIME = "seek_time"
         private const val IS_PLAY_BEFORE = "is_play_before"
+        private const val CURRENT_SOUND = "current_sound"
+
+        const val DOES_NOT_EXIST = 0
     }
 }

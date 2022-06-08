@@ -13,40 +13,34 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(private val application: Application) : ViewModel() {
 
-    private var itFirstTab = true
 
     private val _currentSound = MutableLiveData<MediaPlayer>()
     val currentSound: LiveData<MediaPlayer>
         get() = _currentSound
 
-    private val _previousSound = MutableLiveData<MediaPlayer>()
-    val previousSound: LiveData<MediaPlayer>
-        get() = _previousSound
+    var lastSound = 0
 
     fun getSoundList(): List<SoundModel> {
         val soundList = mutableListOf<SoundModel>()
         with(soundList) {
-            add(SoundModel("Sound 1", MediaPlayer.create(application, R.raw.sound1)))
-            add(SoundModel("Sound 2", MediaPlayer.create(application, R.raw.sound2)))
-            add(SoundModel("Sound 3", MediaPlayer.create(application, R.raw.sound3)))
+            add(SoundModel("Sound 1", R.raw.sound1))
+            add(SoundModel("Sound 2", R.raw.sound2))
+            add(SoundModel("Sound 3", R.raw.sound3))
         }
         return soundList
     }
 
 
     fun clickToRecyclerViewItem(soundModel: SoundModel) {
-        _currentSound.value = soundModel.sound
-        if (itFirstTab) {
-            _currentSound.value?.start()
-            _previousSound.value = _currentSound.value
-            itFirstTab = false
-        } else {
-            if (_previousSound.value?.isPlaying == true) {
-                _previousSound.value?.pause()
-                _previousSound.value?.seekTo(0)
-            }
-            _currentSound.value?.start()
-            _previousSound.value = _currentSound.value
+        lastSound = soundModel.soundRes
+        with(_currentSound) {
+            value?.release()
+            value = MediaPlayer.create(application, soundModel.soundRes)
         }
+    }
+
+    fun reInitCurrentSound(lastSound: Int) {
+        _currentSound.value?.release()
+        _currentSound.value = MediaPlayer.create(application, lastSound)
     }
 }
