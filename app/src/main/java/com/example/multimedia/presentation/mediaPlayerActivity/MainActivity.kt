@@ -18,14 +18,16 @@ import kotlinx.coroutines.*
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    private var coroutineScope = CoroutineScope(Dispatchers.IO)
+    private val coroutineExceptionHandler = CoroutineExceptionHandler{_, _ ->
+        Log.d("nnnnnnnn", "exception")
+    }
+
+    private var coroutineScope = CoroutineScope(Dispatchers.IO + coroutineExceptionHandler)
+    private lateinit var coroutineJob: Any
 
     private lateinit var viewModel: MainViewModel
     private lateinit var binding: ActivityMainBinding
     private lateinit var soundRecyclerViewAdapter: SoundRecyclerViewAdapter
-
-    private var changeSound = false
-    private var itFirstIteration = true
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,6 +53,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        binding.seekbar.progress = 0
+    }
+
     private fun setRecyclerView() {
         soundRecyclerViewAdapter = SoundRecyclerViewAdapter()
         soundRecyclerViewAdapter.soundList = viewModel.getSoundList()
@@ -60,8 +67,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun startSoundAndSeekBar(mediaPlayer: MediaPlayer) {
         mediaPlayer.start()
-        changeSound = true
-        resetSeekBar()
+        reInitCoroutineScope()
+        resetSeekBar(mediaPlayer)
     }
 
     private fun recyclerViewClickListener() {
@@ -75,26 +82,23 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
-    private fun resetSeekBar() {
-        CoroutineScope(Dispatchers.IO).launch {
+    private fun reInitCoroutineScope() {
+        coroutineScope = CoroutineScope(Dispatchers.IO + coroutineExceptionHandler)
+    }
 
-            if (changeSound) testCancelOldCoroutine(this)
-
-            var counter = 0
+    private fun resetSeekBar(mediaPlayer: MediaPlayer) {
+        binding.seekbar.max = mediaPlayer.duration
+        var counter = 0
+        coroutineJob = coroutineScope.launch {
             while (true) {
-                Log.d("fdfdfdfdfd", counter++.toString())
-                binding.seekbar.max = viewModel.currentSound.value?.duration ?: 9999
-                binding.seekbar.progress = viewModel.currentSound.value?.currentPosition ?: 9999
+                Log.d("dfgdfg", counter++.toString())
+                binding.seekbar.progress = mediaPlayer.currentPosition
                 delay(1000)
             }
         }
     }
 
-    private  fun testCancelOldCoroutine (coroutineScope: CoroutineScope) {
-        changeSound = false
-        coroutineScope.cancel()
-        resetSeekBar()
-    }
+
 
     private fun setSeekBarListener() {
         binding.seekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -137,14 +141,12 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         viewModel.currentSound.value?.release()
-        coroutineScope.cancel()
+        (coroutineJob as Job).cancel()
     }
 
     companion object {
         private const val SEEK_TIME = "seek_time"
         private const val IS_PLAY_BEFORE = "is_play_before"
         private const val CURRENT_SOUND = "current_sound"
-
-        const val DOES_NOT_EXIST = 0
     }
 }
